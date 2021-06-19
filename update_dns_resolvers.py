@@ -102,20 +102,7 @@ class DnsResolverProvider():
 
         return output_list
 
-def banner():
-    b = """
- ######  #     #  #####  ######                                                          
- #     # ##    # #     # #     # ######  ####   ####  #      #    # ###### #####   ####  
- #     # # #   # #       #     # #      #      #    # #      #    # #      #    # #      
- #     # #  #  #  #####  ######  #####   ####  #    # #      #    # #####  #    #  ####  
- #     # #   # #       # #   #   #           # #    # #      #    # #      #####       # 
- #     # #    ## #     # #    #  #      #    # #    # #       #  #  #      #   #  #    # 
- ######  #     #  #####  #     # ######  ####   ####  ######   ##   ###### #    #  ####  
-    """
-    print (b)
-
 def parser_error(errmsg):
-    banner()
     print("Usage: python " + sys.argv[0] + " [Options] use -h for help")
     print("Error: " + errmsg)
     sys.exit()
@@ -145,11 +132,16 @@ def main():
     if args.u:
         with open ("sources.txt") as f:
             sources = [s.strip() for s in f.readlines()]
+        print ("(.) Loading the external list...")
 
         for s in sources:
-            resolver_list += requests.get(s).text.split("\n")
+            candidates = requests.get(s).text.split("\n")
+            resolver_list += candidates
+            print ("(+) Got {0} candidates from {1}".format(len(candidates), s))
 
     candidate_resolver_list = list(set(resolver_list))
+    print ("(.) Unique candidates to test: {0}".format(len(candidate_resolver_list)))
+
     good_resolvers = dns_provider.get_good_resolvers(resolver_list=candidate_resolver_list)
     
     if args.output:
@@ -157,7 +149,8 @@ def main():
             for resolver in good_resolvers:
                 f.write("{0}\n".format(resolver))
 
-    print ("(+) {0} resolvers were checked".format(len(candidate_resolver_list)))
+
+    print ("(+) {0} candidates were checked".format(len(candidate_resolver_list)))
     print ("(+) {0} good resolvers have been added to {1}".format(len(good_resolvers),args.output))
 
 if __name__ == '__main__':
