@@ -1,0 +1,2 @@
+https://raw.githubusercontent.com/BonJarber/fresh-resolvers/main/resolvers.txt
+https://raw.githubusercontent.com/epsylon/ufonet/master/botnet/dns.txt
