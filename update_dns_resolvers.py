@@ -22,6 +22,8 @@ class DNSWorker(threading.Thread):
         while True:
             nameserver = self.queue.get()
 
+            print ('(.) Candidates to check: {}'.format(self.queue.qsize()), end="\r", flush=True)
+
             response1 = self.lookup('dns.google', nameserver=nameserver)
             if len(response1) == 0:
                 self.queue.task_done()
@@ -51,32 +53,33 @@ class DNSWorker(threading.Thread):
             response_q = query.send(nameserver, 53, use_tcp, timeout=3)
             if response_q:
                 response = dnslib.DNSRecord.parse(response_q)
+       
+
+            if response: 
+                rcode = dnslib.RCODE[response.header.rcode]
+                if rcode == 'NOERROR' or rcode == 'NXDOMAIN':
+                    # success, this is a valid subdomain
+
+                    for r in response.rr:
+
+                        rtype = None
+                        try:
+                            rtype = str(dnslib.QTYPE[r.rtype])
+                        except:
+                            rtype = str(r.rtype)
+
+                        domain = str(r.rname)
+                        if domain[-1:]=='.':
+                            domain=domain[:-1]
+
+                        rdata = str(r.rdata)
+                        if rdata[-1:]=='.':
+                            rdata=rdata[:-1]
+
+                        results.append({'domain':domain, 'rtype':rtype, 'rdata':rdata})
         except Exception as err:
             return []
             # probably socket timed out
-
-        if response: 
-            rcode = dnslib.RCODE[response.header.rcode]
-            if rcode == 'NOERROR' or rcode == 'NXDOMAIN':
-                # success, this is a valid subdomain
-
-                for r in response.rr:
-
-                    rtype = None
-                    try:
-                        rtype = str(dnslib.QTYPE[r.rtype])
-                    except:
-                        rtype = str(r.rtype)
-
-                    domain = str(r.rname)
-                    if domain[-1:]=='.':
-                        domain=domain[:-1]
-
-                    rdata = str(r.rdata)
-                    if rdata[-1:]=='.':
-                        rdata=rdata[:-1]
-
-                    results.append({'domain':domain, 'rtype':rtype, 'rdata':rdata})
 
         return results
 
